@@ -21,7 +21,6 @@ library(sf)
 library(rayshader)
 library(av)
 ```
-
 # IMPORT DATA
 ```{r }
 dem <- raster(here("dem_story.tif"))
@@ -34,7 +33,7 @@ course <- raster::aggregate(dem, 8)
 dem15N <- projectRaster(course,crs = "+proj=utm +zone=15 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs")
 writeRaster(dem15N,here("data/dem15N.tif"), overwrite=TRUE)
 
-# plot(dem15N)
+plot(dem15N)
 
 ```
 
@@ -43,8 +42,8 @@ writeRaster(dem15N,here("data/dem15N.tif"), overwrite=TRUE)
 wbt_fill_depressions(here("data/dem15N.tif"),here("data/demFill.tif"))
 
 demFill <- raster(here("data/demFill.tif"))
-demDif <- demFill-course
-plot(demDif)
+# demDif <- demFill-course
+# plot(demDif)
 
 ```
 
@@ -70,27 +69,38 @@ plot(log(flowAccum))
 
 # CREATE AND SNAP POUR POINT
 ```{r}
+#Function
+# LongLatToUTM<-function(x,y,zone){
+#  xy <- data.frame(ID = 1:length(x), X = x, Y = y)
+#  coordinates(xy) <- c("X", "Y")
+#  proj4string(xy) <- CRS("+proj=longlat +datum=WGS84")  ## for example
+#  res <- spTransform(xy, CRS(paste("+proj=utm +zone=",zone," ellps=WGS84",sep='')))
+#  return(as.data.frame(res))
+# }
+
 # Create the point
-pts <- data.frame(x = 41.999250, y = -93.657830)
-# hickory grove (x = 41.993057, -93.369520)
-pointSF <- st_as_sf(pts, coords = c("x","y"),crs="+proj=utm +zone=15 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs")
+pts <- data.frame(x = -93.369500, y = 41.993048)
+# hickory grove (x = 41.993048, -93.369500)
+pointSF <- st_as_sf(pts, coords = c("x","y")
+                    ,crs="+proj=longlat +datum=WGS84"
+                    )
 
 # Project the point to UTM 15N
 pointSF15N <- st_transform(pointSF, crs = "+proj=utm +zone=15 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs")
-st_write(pointSF15N, here("data/pour15Nd.shp"))
+st_write(pointSF15N, here("data/pour15N.shp"))
 
 # Snap the point and save it
-# wbt_snap_pour_points(here("data/pour15Na.shp"),here("data/flowAccumulation.tif"),here("data/pourSnapd"),snap_dist = 200, verbose_mode = TRUE)
+wbt_snap_pour_points(here("data/pour15N.shp"),here("data/flowAccumulation.tif"),here("data/pourSnap"),snap_dist = 200, verbose_mode = TRUE)
 
-# snap <- st_read(here("data/pourSnapa.shp"))
-# mapview(snap)+
-  # mapview(pointSF15N, col.regions = 'red')
+snap <- st_read(here("data/pourSnap.shp"))
+mapview(snap)+
+  mapview(pointSF15N, col.regions = 'red')
 ```
 
 # DELINEATE WATERSHED
 ```{r}
 # GENERATE WATERSHED
-wbt_watershed(here("data/flowDir.tif"),here("data/pour15Nd.shp"),here("data/watershed.tif"), verbose_mode = TRUE)
+wbt_watershed(here("data/flowDir.tif"),here("data/pourSnap.shp"),here("data/watershed.tif"), verbose_mode = TRUE)
 
 # LOAD WATERSHED
 watershed <- raster(here("data/watershed.tif"))
@@ -104,19 +114,19 @@ plot(mask)
 
 
 # 3D WATERSHED
-```{r}
-## If you need to reduce the resolution
-# course <- raster::aggregate(mask,20)
+```{r, message=F}
+ # If you need to reduce the resolution
+course2 <- raster::aggregate(mask,8)
 
 ## Convert to matrix
-elmat = raster_to_matrix(mask)
+elmat = raster_to_matrix(course2)
 
 elmat %>%
   sphere_shade(texture = "imhof1") %>%
   add_water(detect_water(elmat), color = "imhof1") %>%
   add_shadow(ray_shade(elmat, zscale = 3), 0.5) %>%
   add_shadow(ambient_shade(elmat), 0.5) %>%
-  plot_3d(elmat, zscale = 10, fov = 0, theta = 135, zoom = 0.5, phi = 45, windowsize = c(1000, 800))
+  plot_3d(elmat, zscale = 10, fov = 0, theta = 135, zoom = 1, phi = 45, windowsize = c(1000, 800))
 Sys.sleep(0.2)
 render_movie(here("movie"))
 
