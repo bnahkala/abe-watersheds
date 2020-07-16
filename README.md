@@ -1,5 +1,5 @@
 # ABE 431 Watershed Delineation Demo
-*Adapted from Andrew Murray, #####
+*Adapted from Andrew Murray, #####*
 
 # Background
 
