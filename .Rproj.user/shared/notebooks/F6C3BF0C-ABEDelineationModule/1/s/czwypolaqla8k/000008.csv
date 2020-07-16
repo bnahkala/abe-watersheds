@@ -1,0 +1,12 @@
+"0","dem <- raster(here(""dem_story.tif""))"
+"0","# plot(dem)"
+"0",""
+"0","# IF NEEDING TO REDUCE RASTER SIZE"
+"0","course <- raster::aggregate(dem, 8)"
+"2","Warning in for (i in seq(along = band)) { :"
+"2","
+ "
+"2"," closing unused connection 3 (C:/Users/Brady/AppData/Local/Temp/RtmpO6ZKt4/raster/r_tmp_2020-07-16_105022_107600_27765.gri)
+"
+"2","
+"

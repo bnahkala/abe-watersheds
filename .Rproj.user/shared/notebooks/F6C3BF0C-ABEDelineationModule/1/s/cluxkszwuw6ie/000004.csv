@@ -1,0 +1,30 @@
+"0","library(whitebox)
+"
+"2","
+---------------------------------------------------------------
+
+Your next step is to download the WhiteboxTools binary:
+    > whitebox::wbt_init()
+
+For whitebox package documentation, ask for help:
+    > ??whitebox
+
+For more information visit https://giswqs.github.io/whiteboxR
+
+---------------------------------------------------------------
+
+"
+"2","
+---------------------------------------------------------------
+
+Your next step is to download the WhiteboxTools binary:
+    > whitebox::wbt_init()
+
+For whitebox package documentation, ask for help:
+    > ??whitebox
+
+For more information visit https://giswqs.github.io/whiteboxR
+
+---------------------------------------------------------------
+
+"

@@ -1,0 +1,124 @@
+---
+title: "ABE 531 Watershed Delineation Module"
+author: "Brady Nahkala"
+date: "7/16/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# LIBRARY
+
+```{r, warning=F, message=F}
+library(raster)
+library(here)
+library(whitebox)
+# library(hddtools)
+library(mapview)
+library(sf)
+library(rayshader)
+library(av)
+```
+
+# IMPORT DATA
+```{r }
+dem <- raster(here("dem_story.tif"))
+# plot(dem)
+
+# IF NEEDING TO REDUCE RASTER SIZE
+course <- raster::aggregate(dem, 8)
+
+# PROJECT 
+dem15N <- projectRaster(course,crs = "+proj=utm +zone=15 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs")
+writeRaster(dem15N,here("data/dem15N.tif"), overwrite=TRUE)
+
+# plot(dem15N)
+
+```
+
+# FILL DEM
+```{r}
+wbt_fill_depressions(here("data/dem15N.tif"),here("data/demFill.tif"))
+
+demFill <- raster(here("data/demFill.tif"))
+demDif <- demFill-course
+plot(demDif)
+
+```
+
+
+# CREATE FLOW DIRECTION RASTER
+```{r}
+wbt_d8_pointer(here("data/demFill.tif"),here("data/flowDir.tif"))
+
+flowDir <- raster(here("data/flowDir.tif"))
+plot(flowDir)
+```
+
+
+# CREATE FLOW ACCUMULATION RASTER
+```{r}
+wbt_d8_flow_accumulation(here("data/demFill.tif"),here("data/flowAccumulation.tif"))
+
+flowAccum <- raster(here("data/flowAccumulation.tif"))
+plot(log(flowAccum))
+
+```
+
+
+# CREATE AND SNAP POUR POINT
+```{r}
+# Create the point
+pts <- data.frame(x = 41.999250, y = -93.657830)
+# hickory grove (x = 41.993057, -93.369520)
+pointSF <- st_as_sf(pts, coords = c("x","y"),crs="+proj=utm +zone=15 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs")
+
+# Project the point to UTM 15N
+pointSF15N <- st_transform(pointSF, crs = "+proj=utm +zone=15 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs")
+st_write(pointSF15N, here("data/pour15Nd.shp"))
+
+# Snap the point and save it
+# wbt_snap_pour_points(here("data/pour15Na.shp"),here("data/flowAccumulation.tif"),here("data/pourSnapd"),snap_dist = 200, verbose_mode = TRUE)
+
+# snap <- st_read(here("data/pourSnapa.shp"))
+# mapview(snap)+
+  # mapview(pointSF15N, col.regions = 'red')
+```
+
+# DELINEATE WATERSHED
+```{r}
+# GENERATE WATERSHED
+wbt_watershed(here("data/flowDir.tif"),here("data/pour15Nd.shp"),here("data/watershed.tif"), verbose_mode = TRUE)
+
+# LOAD WATERSHED
+watershed <- raster(here("data/watershed.tif"))
+mapview(watershed)
+
+# MASK DEM TO WATERSHED YOU CREATED
+mask <- mask(dem15N,watershed)
+plot(mask)
+
+```
+
+
+# 3D WATERSHED
+```{r}
+## If you need to reduce the resolution
+# course <- raster::aggregate(mask,20)
+
+## Convert to matrix
+elmat = raster_to_matrix(mask)
+
+elmat %>%
+  sphere_shade(texture = "imhof1") %>%
+  add_water(detect_water(elmat), color = "imhof1") %>%
+  add_shadow(ray_shade(elmat, zscale = 3), 0.5) %>%
+  add_shadow(ambient_shade(elmat), 0.5) %>%
+  plot_3d(elmat, zscale = 10, fov = 0, theta = 135, zoom = 0.5, phi = 45, windowsize = c(1000, 800))
+Sys.sleep(0.2)
+render_movie(here("movie"))
+
+```
+
