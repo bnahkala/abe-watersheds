@@ -1,0 +1,151 @@
+---
+title: "ABE 531 Watershed Delineation Module"
+author: "Brady Nahkala"
+date: "7/27/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+# This code chunk is generated automatically when you create a new Rmd file. 
+# Here you can specify what options you would like in all of your code chunks in the document (global options).
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# LIBRARY
+The library loads new functions into R for you to utilize. 
+
+```{r, warning=F, message=F}
+library(raster)
+library(here)
+library(whitebox) # main geospatial package
+library(mapview)
+library(sf)
+library(rayshader)
+library(av)
+```
+
+# IMPORT DATA
+This section imports the tif into an R object, lowers the resolution, and visualizes the DEM using plot().
+
+```{r }
+dem <- raster(here("dem_story.tif"))
+
+# TO REDUCE RASTER SIZE
+course <- raster::aggregate(dem, 8)
+
+# PROJECT THE DEM IN THE RIGHT MAPPING COORDINATE SYSTEM
+# IA IS UTM ZONE 15 NORTH
+dem15N <- projectRaster(course,crs = "+proj=utm +zone=15 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs")
+writeRaster(dem15N,here("data/dem15N.tif"), overwrite=TRUE)
+plot(dem15N)
+```
+
+# FILL DEM
+This section fills isolated depressions in the DEM so that there are not any isolated pools in the watershed. This step fills in many of the priarie potholes in the Des Moines Lobe, for example, which do not naturally drain to a stream. 
+
+```{r}
+wbt_fill_depressions(here("data/dem15N.tif"),here("data/demFill.tif"))
+demFill <- raster(here("data/demFill.tif"))
+```
+
+# CREATE FLOW DIRECTION RASTER
+This section analyzes the elevation dataset and decides which direction the water flows for each grid cell in the DEM. 
+
+```{r}
+wbt_d8_pointer(here("data/demFill.tif"),here("data/flowDir.tif"))
+flowDir <- raster(here("data/flowDir.tif"))
+plot(flowDir)
+```
+
+# CREATE FLOW ACCUMULATION RASTER
+This section processes the DEM by assessing how many upstream raster cells there are for each cell in the DEM. 
+
+```{r}
+wbt_d8_flow_accumulation(here("data/demFill.tif"),here("data/flowAccumulation.tif"))
+flowAccum <- raster(here("data/flowAccumulation.tif"))
+plot(log(flowAccum))
+```
+
+# CREATE AND SNAP POUR POINT
+Here, the user inputs the location of the watershed outlet, and the functions snap that point to a stream network identified in the flow accumulation step. 
+
+```{r}
+# Create the point
+pts <- data.frame(x = -93.369500, y = 41.993048) # hickory grove (x = -93.369500, y=41.993048)
+pointSF <- st_as_sf(pts, coords = c("x","y")
+                    ,crs="+proj=longlat +datum=WGS84"
+                    ) # tell R what the projection of the points are (latitude, longitude)
+
+# Project the point into UTM 15N
+pointSF15N <- st_transform(pointSF, crs = "+proj=utm +zone=15 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs")
+st_write(pointSF15N, here("data/pour15N.shp"))
+
+# Snap the point and save it
+wbt_snap_pour_points(here("data/pour15N.shp"),here("data/flowAccumulation.tif"),here("data/pourSnap"),snap_dist = 200, verbose_mode = TRUE)
+snap <- st_read(here("data/pourSnap.shp"))
+# mapview(snap)+
+#   mapview(pointSF15N, col.regions = 'red') # view the point in an interactive map and compare the snapped point to the original
+```
+
+# DELINEATE WATERSHED
+This section takes the steps prior and allows you to delineate the watershed for the specified point. 
+
+```{r}
+# GENERATE WATERSHED
+wbt_watershed(here("data/flowDir.tif"),here("data/pourSnap.shp"),here("data/watershed.tif"), verbose_mode = F)
+
+# LOAD WATERSHED
+watershed <- raster(here("data/watershed.tif"))
+mapview(watershed)
+
+# MASK DEM TO WATERSHED YOU CREATED
+mask <- mask(dem15N,watershed)
+plot(mask)
+```
+
+# 3D WATERSHED
+This section is just for fun. The package 'rayshader' allows you to create a 3D animation of the watershed. Elevations exaggerated and low resolution for faster processing. 
+
+```{r, message=F}
+ # If you need to reduce the resolution
+course2 <- raster::aggregate(mask,8)
+
+## Convert to matrix
+elmat = raster_to_matrix(course2)
+
+elmat %>%
+  sphere_shade(texture = "imhof1") %>%
+  add_water(detect_water(elmat), color = "imhof1") %>%
+  add_shadow(ray_shade(elmat, zscale = 10), 0.5) %>%
+  add_shadow(ambient_shade(elmat), 0) %>%
+  plot_3d(elmat, zscale = 250, fov = 0, theta = 25, zoom = 0.35, phi = 25, windowsize = c(1000, 800))
+render_snapshot()
+
+```
+
+# Prairie Potholes
+This section substracts the filled DEM from the regular, aggregated DEM to create a difference raster. This difference raster, in general, highlights the numerous prairie potholes located in story county. 
+
+```{r}
+demDif <- demFill-course
+plot(demDif
+     , xlim=c(435000, 445000)
+     , ylim=c(4645000, 4650000)
+     )
+
+# mapview(demDif) # interactive map if you want to be fancy
+```
+
+# Unused Lat/Long Converter Function
+
+```{r}
+#Function
+# LongLatToUTM<-function(x,y,zone){
+#  xy <- data.frame(ID = 1:length(x), X = x, Y = y)
+#  coordinates(xy) <- c("X", "Y")
+#  proj4string(xy) <- CRS("+proj=longlat +datum=WGS84")  ## for example
+#  res <- spTransform(xy, CRS(paste("+proj=utm +zone=",zone," ellps=WGS84",sep='')))
+#  return(as.data.frame(res))
+# }
+```
+

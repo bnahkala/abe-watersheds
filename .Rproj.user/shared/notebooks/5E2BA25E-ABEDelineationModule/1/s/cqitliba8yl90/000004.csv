@@ -1,0 +1,7 @@
+"0","wbt_d8_pointer(here(""data/demFill.tif""),here(""data/flowDir.tif""))"
+"1","[1]"
+"1"," ""d8_pointer - Elapsed Time (excluding I/O): 0.79s"""
+"1","
+"
+"0","flowDir <- raster(here(""data/flowDir.tif""))"
+"0","plot(flowDir)"

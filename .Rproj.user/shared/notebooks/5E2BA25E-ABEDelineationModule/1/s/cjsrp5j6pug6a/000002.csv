@@ -1,0 +1,6 @@
+"0","demDif <- demFill-course"
+"2","Raster objects have different extents. Result for their intersection is returned"
+"0","plot(demDif"
+"0","     , xlim=c(435000, 445000)"
+"0","     , ylim=c(4645000, 4650000)"
+"0","     )"

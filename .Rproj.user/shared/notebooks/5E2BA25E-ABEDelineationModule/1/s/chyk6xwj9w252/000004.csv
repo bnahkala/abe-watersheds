@@ -1,0 +1,7 @@
+"0","wbt_d8_flow_accumulation(here(""data/demFill.tif""),here(""data/flowAccumulation.tif""))"
+"1","[1]"
+"1"," ""d8_flow_accumulation - Elapsed Time (excluding I/O): 0.294s"""
+"1","
+"
+"0","flowAccum <- raster(here(""data/flowAccumulation.tif""))"
+"0","plot(log(flowAccum))"
