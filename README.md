@@ -22,6 +22,7 @@ Watershed delineations can be performed by hand or by using GIS software. The mo
 ![Watershed in Story County](https://github.com/bnahkala/abe-watersheds/blob/master/img/watershed.png)
 
 2. Visualize a 3D exaggerated rendering of the watershed. 
+
 ![3D Watershed in Story County](https://github.com/bnahkala/abe-watersheds/blob/master/img/ray.png)
 
 3. Highlight other raster geoprocessing, such as finding prairie potholes in Iowa. 
