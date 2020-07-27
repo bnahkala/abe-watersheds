@@ -1,5 +1,5 @@
 # ABE 431 Watershed Delineation Demo
-*Adapted from Andrew Murray, #####*
+*Adapted from Andrew Murray, UNC*
 
 # Background
 
@@ -15,3 +15,8 @@ Watershed delineations can be performed by hand or by using GIS software. The mo
 1. Knowledge of watershed delineation methods. 
 2. Increased programming knowledge. 
 3. Knowledge of active research methods. 
+
+# Examples
+
+1. Visualize the delineated watershed. 
+![Watershed in Story County](https://github.com/bnahkala/abe-watersheds/blob/master/img/watershed.png)
