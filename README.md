@@ -18,7 +18,7 @@ Watershed delineations can be performed by hand or by using GIS software. The mo
 
 # Examples
 
-1. Visualize the delineated watershed. 
+1. Visualize the delineated watershed. Highlight the fact that it appears the watershed is cut off at the county boundary. Good way to show that reviewing your data is important. 
 ![Watershed in Story County](https://github.com/bnahkala/abe-watersheds/blob/master/img/watershed.png)
 
 2. Visualize a 3D exaggerated rendering of the watershed. 
